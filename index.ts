@@ -61,6 +61,11 @@ class MassBanAndClean {
         }
     }
 
+    /**
+     * 
+     * @param arg A command line argument.
+     * @returns If argument is undefined, return default status Settings, otherwise check if it is equal to 'true'.
+     */
     private isFlagTrue(arg: string): boolean {
         if (this.isUndefined(arg)) {
             return SETTINGS.DEFAULT_ARG_FLAG
@@ -69,19 +74,36 @@ class MassBanAndClean {
         return arg.toLowerCase() === 'true'
     }
 
+    /**
+     * 
+     * @param variable Any variable that needs to be checked of its undefined status.
+     * @returns If the variable given is undefined.
+     */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private isUndefined(variable: any): boolean {
         return typeof variable === 'undefined'
     }
 
-    private isEmpty(str: string): boolean {
-        return !str.length
-    }
-
     private isCredentialInvalid(credential: string | undefined): boolean {
-        return this.isUndefined(credential) || this.isEmpty(credential)
+        return this.isUndefined(credential) || !credential.length
     }
 
+    /**
+     * 
+     * @param arr Array of strings.
+     * @returns Array of string with removed duplicates and no empty elements.
+     */
+    private sanitizeArray(arr: string[]): string[] {
+        const removedEmptyItems = arr.filter(e => e)
+        const uniqueValues = [...new Set(removedEmptyItems)]
+        return uniqueValues
+    }
+
+    /**
+     * 
+     * @param time Milliseconds to wait.
+     * @returns A promise after given time.
+     */
     private sleep(time: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, time))
     }
@@ -102,7 +124,7 @@ class MassBanAndClean {
         
         const banned = bannedBuffer.split(SETTINGS.SEPARATOR)
         const fetched = fetchedList.split(SETTINGS.SEPARATOR)
-        const toBan = difference(fetched, banned)
+        const toBan = this.sanitizeArray(difference(fetched, banned))
         const toBanLength = toBan.length
 
         console.log(`Banning ${toBanLength} users...`)
@@ -130,9 +152,7 @@ class MassBanAndClean {
 
         console.log('List of false positives acquired!')
         
-        const unBanList = fetchedList
-            .split('\n')
-            .filter((name: string) => name)
+        const unBanList = this.sanitizeArray(fetchedList.split('\n'))
         const unBanListLength = unBanList.length
 
         console.log(`Unbanning ${unBanListLength} users...`)
