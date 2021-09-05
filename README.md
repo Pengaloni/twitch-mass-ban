@@ -8,7 +8,7 @@ This script fetches the banlist from [Hackbolt's list of bots and bigots](https:
 
 ## Requirements
 
-- Node.js >= 14 [install recommended with (nvm](https://github.com/nvm-sh/nvm))
+- Node.js >= 14 [install recommended with nvm](https://github.com/nvm-sh/nvm)
 
 ## Getting the credentials
 
