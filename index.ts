@@ -52,8 +52,13 @@ class MassBanAndClean {
         this.client = new tmi.Client(tmiClientOptions)
     }
 
+    /**
+     * Disconnect from client and throw an error if the call does not have a 2xx status.
+     * @param status The status of the call.
+     */
     private async hasApiCallOkStatus(status: number): Promise<void> {
-        const OK_RESPONSE_STATUS_REGEX = new RegExp('20[01]')
+        const HTTP_OK_REGEX = '20[01]'
+        const OK_RESPONSE_STATUS_REGEX = new RegExp(HTTP_OK_REGEX)
 
         if (!OK_RESPONSE_STATUS_REGEX.test(status.toString())) {
             this.client.disconnect()
@@ -62,7 +67,7 @@ class MassBanAndClean {
     }
 
     /**
-     * 
+     * Checks if the CLI argument exists or if it is true.
      * @param arg A command line argument.
      * @returns If argument is undefined, return default status Settings, otherwise check if it is equal to 'true'.
      */
@@ -84,6 +89,11 @@ class MassBanAndClean {
         return typeof variable === 'undefined'
     }
 
+    /**
+     * Checks if the credential exists and has a length
+     * @param credential A credential from .env file
+     * @returns If the credential exists and has a length
+     */
     private isCredentialInvalid(credential: string | undefined): boolean {
         return this.isUndefined(credential) || !credential.length
     }
@@ -100,7 +110,6 @@ class MassBanAndClean {
     }
 
     /**
-     * 
      * @param time Milliseconds to wait.
      * @returns A promise after given time.
      */
@@ -108,8 +117,12 @@ class MassBanAndClean {
         return new Promise(resolve => setTimeout(resolve, time))
     }
 
+    /**
+     * Bans users given a fetched list of known users, and filters out the already banned users from a txt file.
+     * Disconnects if the ban command isn't sent.
+     */
     private async banFromList(): Promise<void> {
-        console.log('Acquiring list...')
+        console.info('Acquiring list...')
 
         const listResponse = await fetch(URLS.LIST)
         
@@ -117,17 +130,15 @@ class MassBanAndClean {
 
         const fetchedList = await listResponse.text()
 
-        console.log('Ban list acquired!')
+        console.info('Ban list acquired!')
 
         const bannedBuffer = await readFilePromise(this.bannedList, 'utf-8')
-
-        
         const banned = bannedBuffer.split(SETTINGS.SEPARATOR)
         const fetched = fetchedList.split(SETTINGS.SEPARATOR)
         const toBan = this.sanitizeArray(difference(fetched, banned))
         const toBanLength = toBan.length
 
-        console.log(`Banning ${toBanLength} users...`)
+        console.info(`Banning ${toBanLength} users...`)
 
         for (const name of toBan) {
             await this.sleep(SETTINGS.TIMEOUT_BUFFER)
@@ -141,8 +152,12 @@ class MassBanAndClean {
         }
     }
 
+    /**
+     * Removes ban status given a list.
+     * Disconnects if the unban command isn't sent.
+     */
     private async unBanFalsePositives(): Promise<void> {
-        console.log('Acquiring false positives list...')
+        console.info('Acquiring false positives list...')
 
         const listResponse = await fetch(URLS.LIST_FALSE_POSITIVES)
 
@@ -150,12 +165,12 @@ class MassBanAndClean {
 
         const fetchedList = await listResponse.text()
 
-        console.log('List of false positives acquired!')
+        console.info('List of false positives acquired!')
         
         const unBanList = this.sanitizeArray(fetchedList.split('\n'))
         const unBanListLength = unBanList.length
 
-        console.log(`Unbanning ${unBanListLength} users...`)
+        console.info(`Unbanning ${unBanListLength} users...`)
 
         for (const name of unBanList) {
             await this.sleep(SETTINGS.TIMEOUT_BUFFER)
@@ -167,6 +182,11 @@ class MassBanAndClean {
         }
     }
 
+    /**
+     * Checks if the client connected correctly, if the credentials file exists and is correct,
+     * performs a mass ban and a mass unban given the appropriate lists.
+     * Disconnects if connection problems occur or if the mass ban/unban encountered problems.
+     */
     public async init(): Promise<void> {
         // if could not connect
         if (this.isUndefined(this.client)) {
