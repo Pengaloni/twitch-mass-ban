@@ -129,29 +129,22 @@ class MassBanAndClean {
         const fetchedList = await listResponse.text()
 
         console.log('List of false positives acquired!')
+        
+        const unBanList = fetchedList
+            .split('\n')
+            .filter((name: string) => name)
+        const unBanListLength = unBanList.length
 
-        // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (resolve, reject) => {
-            try {
-                const unBanList = fetchedList
-                    .split('\n')
-                    .filter((name: string) => name)
-                const unBanListLength = unBanList.length
+        console.log(`Unbanning ${unBanListLength} users...`)
 
-                console.log(`Unbanning ${unBanListLength} users...`)
-
-                for (const name of unBanList) {
-                    await this.sleep(SETTINGS.TIMEOUT_BUFFER)
-                    await this.client.say(this.AUTH.CHANNEL, `/unban ${name}`)
-                }
-
-                resolve()
-            }
-            catch {
-                reject
-                throw new Error()
-            }
-        })
+        for (const name of unBanList) {
+            await this.sleep(SETTINGS.TIMEOUT_BUFFER)
+            await this.client.say(this.AUTH.CHANNEL, `/unban ${name}`)
+            .catch(e => {
+                this.client.disconnect()
+                throw new Error(e)
+            })
+        }
     }
 
     public async init(): Promise<void> {
