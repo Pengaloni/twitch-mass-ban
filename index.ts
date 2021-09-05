@@ -79,10 +79,8 @@ class MassBanAndClean {
         return this.isUndefined(credential) || this.isEmpty(credential)
     }
 
-    private delay(time: number) {
-        return new Promise(resolve => {
-            setTimeout(resolve, time)
-        })
+    private sleep(time: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, time))
     }
 
     private async banFromList(): Promise<void> {
@@ -111,7 +109,7 @@ class MassBanAndClean {
                     console.log(`Banning ${toBanLength} users...`)
 
                     for (const name of toBan) {
-                        await this.delay(SETTINGS.TIMEOUT_BUFFER)
+                        await this.sleep(SETTINGS.TIMEOUT_BUFFER)
                         await this.client.say(this.AUTH.CHANNEL, `/ban ${name} Known bot`)
                         appendFileSync(this.bannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8')
                     }
@@ -150,7 +148,7 @@ class MassBanAndClean {
                 console.log(`Unbanning ${unBanListLength} users...`)
 
                 for (const name of unBanList) {
-                    await this.delay(SETTINGS.TIMEOUT_BUFFER)
+                    await this.sleep(SETTINGS.TIMEOUT_BUFFER)
                     await this.client.say(this.AUTH.CHANNEL, `/unban ${name}`)
                 }
 
