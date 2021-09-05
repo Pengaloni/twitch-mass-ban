@@ -13,6 +13,9 @@ import SETTINGS from './src/shared/settings'
 import URLS from './src/shared/urls'
 import Arguments from './src/enums/Arguments'
 import AuthInterface from './src/interfaces/AuthInterface'
+import { promisify } from 'util'
+
+const readFilePromise = promisify(readFile)
 
 class MassBanAndClean {
     private AUTH: AuthInterface
@@ -94,36 +97,26 @@ class MassBanAndClean {
 
         console.log('Ban list acquired!')
 
-        return new Promise((resolve, reject) => {
-            readFile(this.bannedList, 'utf8', async (err, bannedBuffer) => {
-                if(err) {
-                    throw new Error()
-                }
+        const bannedBuffer = await readFilePromise(this.bannedList, 'utf-8')
 
-                try {
-                    const banned = bannedBuffer.split(SETTINGS.SEPARATOR)
-                    const fetched = fetchedList.split(SETTINGS.SEPARATOR)
-                    const toBan = difference(fetched, banned)
-                    const toBanLength = toBan.length
+        
+        const banned = bannedBuffer.split(SETTINGS.SEPARATOR)
+        const fetched = fetchedList.split(SETTINGS.SEPARATOR)
+        const toBan = difference(fetched, banned)
+        const toBanLength = toBan.length
 
-                    console.log(`Banning ${toBanLength} users...`)
+        console.log(`Banning ${toBanLength} users...`)
 
-                    for (const name of toBan) {
-                        await this.sleep(SETTINGS.TIMEOUT_BUFFER)
-                        await this.client.say(this.AUTH.CHANNEL, `/ban ${name} Known bot`)
-                        appendFileSync(this.bannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8')
-                    }
-
-                    resolve()
-                }
-                catch {
-                    this.client.disconnect()
-                    reject()
-                    throw new Error('You got rate limited!')
-                }
-
+        for (const name of toBan) {
+            await this.sleep(SETTINGS.TIMEOUT_BUFFER)
+            await this.client.say(this.AUTH.CHANNEL, `/ban ${name} Known bot`).then(() => {
+                appendFileSync(this.bannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8')
             })
-        })
+            .catch(e => {
+                this.client.disconnect()
+                throw new Error(e)
+            })
+        }
     }
 
     private async unBanFalsePositives(): Promise<void> {
