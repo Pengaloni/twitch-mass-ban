@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ESNext",
+    "lib": [
+      "es2017"
+    ],
+    "types": [
+      "node",
+      "tmi.js",
+      "node-fetch",
+      "lodash.difference"
+    ],
+    "esModuleInterop": true,
+    "moduleResolution": "node"
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "index.ts",
+    "./src"
+  ]
+}

@@ -1,0 +1,14 @@
+# common IDE folders
+.vscode
+.idea
+
+
+node_modules
+
+# Files that are edited on runtime
+.env
+banned-users.txt
+
+# Ignore compiled JS files
+*.js
+./src/**/*.js
