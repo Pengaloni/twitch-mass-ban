@@ -22,7 +22,7 @@ This script fetches the banlist from [Hackbolt's list of bots and bigots](https:
 2. Fill the credentials as follows, after the = sign:
    - OAUTH_TOKEN: the token obtained from twitchapps.com;
    - USERNAME: the username of the account you used to get the oauth token;
-   - CHANNEL: your Twitch channel name.
+   - CHANNEL: channel you want to ban the bots on.
 
 ## Running the script
 
