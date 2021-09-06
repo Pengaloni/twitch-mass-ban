@@ -6,9 +6,16 @@ This program can also be ran on cronjob as well, which can be helpful as the lis
 
 This script fetches the banlist from [Hackbolt's list of bots and bigots](https://github.com/hackbolt/twitchbotsnbigots), and unbans known false positives.
 
+As the script bans and unbans users, it saves their usernames on dedicated files (see below), to avoid banning or unbanning the same users over and over again.
+These files **are not versioned**; this means that the user of the program should find a way to back it up.
+
 ## Requirements
 
-- Node.js >= 14 [install recommended with nvm](https://github.com/nvm-sh/nvm)
+- Node.js >= 14 - [installation recommended with nvm](https://github.com/nvm-sh/nvm)
+
+## Environments
+
+This script was tested on Ubuntu under WSL and an Orange Pi with Armbian, although any OS that can run Node.js should be able to run this script as well.
 
 ## Getting the credentials
 
@@ -27,16 +34,17 @@ This script fetches the banlist from [Hackbolt's list of bots and bigots](https:
 ## Running the script
 
 1. Open a terminal and navigate to its folder;
-   - If `banned-users.txt` does not exist, create it as an empty file or copy `banned-users.txt.template`. This is where the script will store every user who was banned.
-   - Please not that this file is **not versioned**, meaning you have to take care of backing it up.
+   - If `banned-users.txt` does not exist, create it as an empty file or copy `banned-users.txt.template` while removing `.template`. This is where the script will store every user who was banned.
+   - If `unbanned-users.txt` does not exist, create it as an empty file or copy `unbanned-users.txt.template` while removing `.template`. This is where the script will store every user who was unbanned.
+   - Please notice that these files are **not versioned**, meaning you have to take care of backing them up.
 2. Run the installation:
 
-`npm install`
+   `npm install`
 
 3. Build the script with:
 
-`npm run build`
+   `npm run build`
 
 4. Run the script with:
 
-`node .`
+   `node .`
