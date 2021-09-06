@@ -13,6 +13,7 @@ import SETTINGS from './src/shared/settings'
 import URLS from './src/shared/urls'
 import Arguments from './src/enums/Arguments'
 import AuthInterface from './src/interfaces/AuthInterface'
+import List from './src/interfaces/List'
 import { promisify } from 'util'
 
 const readFilePromise = promisify(readFile)
@@ -23,8 +24,7 @@ class MassBanAndClean {
     private performMassBan: boolean
     private performMassUnBan: boolean
     private bannedList = `${currentDir}/${SETTINGS.BANNED_USERS_LIST}`
-
-    // define tmi.js object until the vendor provides types.
+    private unbannedList = `${currentDir}/${SETTINGS.UNBANNED_USERS_LIST}`
     private client: Actions
 
     constructor() {
@@ -118,33 +118,48 @@ class MassBanAndClean {
     }
 
     /**
-     * Bans users given a fetched list of known users, and filters out the already banned users from a txt file.
-     * Disconnects if the ban command isn't sent.
+     * 
+     * @param remoteList Remote list which will be compared with local
+     * @param progressFile Local file used to keep track of progress from the remote list
+     * @param remoteTextSeparator Token used to separate lines from remote file
+     * @returns Object containing the list on which to operate on and its length
      */
-    private async banFromList(): Promise<void> {
+    private async getList(remoteList: string = URLS.LIST, progressFile: string = this.bannedList, remoteTextSeparator: string = SETTINGS.SEPARATOR): Promise<List> {
         console.info('Acquiring list...')
 
-        const listResponse = await fetch(URLS.LIST)
+        const listResponse = await fetch(remoteList)
         
         await this.hasApiCallOkStatus(listResponse.status)
 
         const fetchedList = await listResponse.text()
 
-        console.info('Ban list acquired!')
+        console.info('Local and remote lists acquired!')
 
-        const bannedBuffer = await readFilePromise(this.bannedList, 'utf-8')
-        const banned = bannedBuffer.split(SETTINGS.SEPARATOR)
-        const fetched = fetchedList.split(SETTINGS.SEPARATOR)
-        const toBan = this.sanitizeArray(difference(fetched, banned))
-        const toBanLength = toBan.length
+        const fileBuffer = await readFilePromise(progressFile, 'utf-8')
+        const listFromBuffer = fileBuffer.split(SETTINGS.SEPARATOR)
+        const fetchedListFromRemoteBuffer = fetchedList.split(remoteTextSeparator)
+        const list = this.sanitizeArray(difference(fetchedListFromRemoteBuffer, listFromBuffer))
 
-        console.info(`Banning ${toBanLength} users...`)
+        return {
+            list,
+            length: list.length
+        }
+    
+    }
 
-        for (const name of toBan) {
+    /**
+     * Bans users given a fetched list of known users, and filters out the already banned users from a txt file.
+     * Disconnects if the ban command isn't sent.
+     */
+    private async banFromList(): Promise<void> {
+        const {list, length} = await this.getList()
+
+        console.info(`Banning ${length} users...`)
+
+        for (const name of list) {
             await this.sleep(SETTINGS.TIMEOUT_BUFFER)
-            await this.client.say(this.AUTH.CHANNEL, `/ban ${name} Known bot`).then(() => {
-                appendFileSync(this.bannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8')
-            })
+            await this.client.say(this.AUTH.CHANNEL, `/ban ${name} Known bot`)
+            .then(() => appendFileSync(this.bannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8'))
             .catch(e => {
                 this.client.disconnect()
                 throw new Error(e)
@@ -157,24 +172,14 @@ class MassBanAndClean {
      * Disconnects if the unban command isn't sent.
      */
     private async unBanFalsePositives(): Promise<void> {
-        console.info('Acquiring false positives list...')
+        const {list: toUnban, length: toUnbanLength} = await this.getList(URLS.LIST_FALSE_POSITIVES, this.unbannedList, SETTINGS.SEPARATOR_UNBANNED_REMOTE)
 
-        const listResponse = await fetch(URLS.LIST_FALSE_POSITIVES)
+        console.info(`Unbanning ${toUnbanLength} users...`)
 
-        await this.hasApiCallOkStatus(listResponse.status)
-
-        const fetchedList = await listResponse.text()
-
-        console.info('List of false positives acquired!')
-        
-        const unBanList = this.sanitizeArray(fetchedList.split('\n'))
-        const unBanListLength = unBanList.length
-
-        console.info(`Unbanning ${unBanListLength} users...`)
-
-        for (const name of unBanList) {
+        for (const name of toUnban) {
             await this.sleep(SETTINGS.TIMEOUT_BUFFER)
             await this.client.say(this.AUTH.CHANNEL, `/unban ${name}`)
+            .then(() => appendFileSync(this.unbannedList, `${SETTINGS.SEPARATOR}${name}`, 'utf8'))
             .catch(e => {
                 this.client.disconnect()
                 throw new Error(e)
@@ -216,16 +221,25 @@ class MassBanAndClean {
         console.info('Connected!')
 
         if (this.performMassBan) {
+            if (!existsSync(this.bannedList)) {
+                this.client.disconnect()
+                throw new Error(`${this.bannedList} does not exist!`)
+            }
+
             await this.banFromList()
         }
 
         if (this.performMassUnBan) {
+            if (!existsSync(this.unbannedList)) {
+                this.client.disconnect()
+                throw new Error(`${this.unbannedList} does not exist!`)
+            }
+
             await this.unBanFalsePositives()
         }
 
         this.client.disconnect()
     }
-
 }
 
 new MassBanAndClean().init()
